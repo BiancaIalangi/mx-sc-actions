@@ -79,23 +79,26 @@ on:
         description: "Github token"
         required: true
 
+permissions:
+  read-all:
+
 jobs:
   setup:
     name: Setup Environment
     runs-on: ${{ inputs.setup-runs-on || inputs.runs-on }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Install rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c
         with:
           toolchain: ${{ inputs.rust-toolchain }}
           target: ${{ inputs.rust-target }}
 
       - name: Install Wasm-Opt
         run: |
-          wget https://github.com/WebAssembly/binaryen/releases/download/version_${{ inputs.wasm-opt-version }}/binaryen-version_${{ inputs.wasm-opt-version }}-x86_64-linux.tar.gz
-          tar -xvf binaryen-version_${{ inputs.wasm-opt-version }}-x86_64-linux.tar.gz
+          wget https://github.com/WebAssembly/binaryen/releases/download/version_${{ inputs.wasm-opt-version }}/binaryen-version_"${{ inputs.wasm-opt-version }}"-x86_64-linux.tar.gz
+          tar -xvf binaryen-version_"${{ inputs.wasm-opt-version }}"-x86_64-linux.tar.gz
           echo "$(pwd)/binaryen-version_${{ inputs.wasm-opt-version }}/bin" >> $GITHUB_PATH
 
       - name: Install Twiggy
@@ -106,19 +109,19 @@ jobs:
         run: |
           if [[ -n "${{ inputs.path-to-sc-meta }}" ]];
           then
-              cargo install --path ${{ inputs.path-to-sc-meta }} --force
+              cargo install --path "${{ inputs.path-to-sc-meta }}" --force
           elif [[ -z "${{ inputs.sc-meta-version }}" ]];
           then
               cargo install multiversx-sc-meta --locked --force
           else
-              cargo install multiversx-sc-meta --version ${{ inputs.sc-meta-version }} --locked --force
+              cargo install multiversx-sc-meta --version "${{ inputs.sc-meta-version }}" --locked --force
           fi
 
           if [[ -z "${{ inputs.mx-scenario-go-version }}" ]];
           then
               sc-meta install mx-scenario-go
           else
-              sc-meta install mx-scenario-go --tag ${{ inputs.mx-scenario-go-version }}
+              sc-meta install mx-scenario-go --tag "${{ inputs.mx-scenario-go-version }}"
           fi
 
           which wasm-opt
@@ -134,7 +137,7 @@ jobs:
           tar -cvf sc_meta.tar \
             "$(which sc-meta)" \
             "$(which wasm-opt)" \
-            "$(find "$(pwd)/binaryen-version_${{ inputs.wasm-opt-version }}" -name "libbinaryen.a")"
+            "$(find "$(pwd)/binaryen-version_${{ inputs.wasm-opt-version }}" -name "libbinaryen.so")"
 
       - name: "Tar mx-scenario-go"
         run: |
@@ -150,7 +153,7 @@ jobs:
           tar -cvf mx_scenario_go.tar "$SCENARIO_PATH" "$LIB_WASMER" "$LIB_C_API"
 
       - name: Upload sc-meta artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: sc-meta
           retention-days: 1
@@ -158,7 +161,7 @@ jobs:
           path: sc_meta.tar
 
       - name: Upload mx-scenario-go artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: mx-scenario-go
           retention-days: 1
@@ -167,20 +170,22 @@ jobs:
 
       - name: Cleanup
         run: |
-          rm -f binaryen-version_${{ inputs.wasm-opt-version }}-x86_64-linux.tar.gz
+          rm -f binaryen-version_"${{ inputs.wasm-opt-version }}"-x86_64-linux.tar.gz
           rm -f sc_meta.tar
           rm -f mx_scenario_go.tar
-          rm -rf binaryen-version_${{ inputs.wasm-opt-version }}
+          rm -rf binaryen-version_"${{ inputs.wasm-opt-version }}"
 
   wasm_test:
     name: Wasm tests
     needs: setup
     runs-on: ${{ inputs.wasm-test-runs-on || inputs.runs-on }}
+    permissions:
+      pull-requests: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Install rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c
         with:
           toolchain: ${{ inputs.rust-toolchain }}
           target: ${{ inputs.rust-target }}
@@ -189,13 +194,13 @@ jobs:
         run: mkdir -p tools
 
       - name: Download sc-meta artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
           name: sc-meta
           path: tools
 
       - name: Download mx-scenario-go artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
           name: mx-scenario-go
           path: tools
@@ -239,13 +244,13 @@ jobs:
 
       - name: Upload the report json
         if: ${{ inputs.enable-contracts-size-report }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: report
           path: report.json
 
       - name: Download the base report
-        uses: dawidd6/action-download-artifact@v11
+        uses: dawidd6/action-download-artifact@ac66b43f0e6a346234dd65d4d0c8fbb31cb316e5
         if: ${{ github.event_name == 'pull_request' && inputs.enable-contracts-size-report }}
         continue-on-error: true
         with:
@@ -263,7 +268,7 @@ jobs:
 
       - name: Render the report from the template
         id: template
-        uses: chuhlomin/render-template@v1
+        uses: chuhlomin/render-template@807354a04d9300c9c2ac177c0aa41556c92b3f75
         if: ${{ github.event_name == 'pull_request' && inputs.enable-contracts-size-report }}
         with:
           template: report.md
@@ -272,7 +277,7 @@ jobs:
             head: ${{ github.event.pull_request.head.sha }}
 
       - name: Upload the report markdown
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         if: ${{ github.event_name == 'pull_request' && inputs.enable-contracts-size-report }}
         with:
           name: report-markdown
@@ -280,7 +285,7 @@ jobs:
 
       - name: Find the comment containing the report
         id: fc
-        uses: peter-evans/find-comment@v4
+        uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad
         if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository  && inputs.enable-contracts-size-report }}
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -288,7 +293,7 @@ jobs:
           body-includes: "Contract comparison"
 
       - name: Create or update the report comment
-        uses: peter-evans/create-or-update-comment@v5
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9
         if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository  && inputs.enable-contracts-size-report }}
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
@@ -305,10 +310,10 @@ jobs:
     runs-on: ${{ inputs.interactor-tests-runs-on || inputs.runs-on }}
     if: inputs.enable-interactor-tests
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Install rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c
         with:
           toolchain: ${{ inputs.rust-toolchain }}
           target: ${{ inputs.rust-target }}
@@ -317,7 +322,7 @@ jobs:
         run: mkdir -p tools
 
       - name: Download sc-meta artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
           name: sc-meta
           path: tools
@@ -368,11 +373,13 @@ jobs:
     name: Test Coverage
     needs: setup
     runs-on: ${{ inputs.test-coverage-runs-on || inputs.runs-on }}
+    permissions:
+      pull-requests: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Install rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c
         with:
           toolchain: ${{ inputs.rust-toolchain }}
           target: ${{ inputs.rust-target }}
@@ -412,7 +419,7 @@ jobs:
           RUSTFLAGS: ""
         run: |
           export LD_LIBRARY_PATH=$(pwd)/tools
-          sc-meta test-coverage ${{ inputs.coverage-args }}
+          sc-meta test-coverage "${{ inputs.coverage-args }}"
 
       - name: Upload the report
         uses: actions/upload-artifact@v4
@@ -422,7 +429,7 @@ jobs:
 
       - name: Find the comment containing the report
         id: fc
-        uses: peter-evans/find-comment@v4
+        uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -430,7 +437,7 @@ jobs:
           body-includes: "Coverage Summary"
 
       - name: Create or update the report comment
-        uses: peter-evans/create-or-update-comment@v5
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
@@ -445,8 +452,8 @@ jobs:
     name: Rust tests
     runs-on: ${{ inputs.runs-on }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+      - uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c
         with:
           toolchain: ${{ inputs.rust-toolchain }}
 
@@ -459,12 +466,12 @@ jobs:
     name: Clippy linter check
     runs-on: ${{ inputs.runs-on }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+      - uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c
         with:
           toolchain: ${{ inputs.rust-toolchain }}
           components: clippy
-      - uses: giraffate/clippy-action@v1
+      - uses: giraffate/clippy-action@13b9d32482f25d29ead141b79e7e04e7900281e0
         env:
           RUSTFLAGS: ""
         with:
