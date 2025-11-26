@@ -65,6 +65,14 @@ permissions:
 
 ## Additional options
 
+### Specifying a custom runner for a specific job
+
+It is possible to specify a custom runner for each job. The following options are available:
+- `setup-runs-on`
+- `wasm-test-runs-on`
+- `interactor-tests-runs-on`
+- `test-coverage-runs-on`
+
 ## Usage of `reproducible-build.yml`
 
 See [reproducible-build.yml](.github/workflows/reproducible-build.yml).
