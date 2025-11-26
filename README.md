@@ -3,8 +3,10 @@
 A Github Action for smart contracts which:
 - builds the wasm files
 - runs both the rust and go testing scenarios
+- runs interactor tests (optional)
 - does a clippy check
 - provides a report containing details about the smart contracts
+- provides a coverage report (optional)
 
 ## Usage of `contracts.yml`
 
