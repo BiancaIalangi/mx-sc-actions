@@ -3,8 +3,10 @@
 A Github Action for smart contracts which:
 - builds the wasm files
 - runs both the rust and go testing scenarios
+- runs interactor tests (optional)
 - does a clippy check
 - provides a report containing details about the smart contracts
+- provides a coverage report (optional)
 
 ## Usage of `contracts.yml`
 
@@ -65,6 +67,14 @@ permissions:
 
 ## Additional options
 
+### Specifying a custom runner for a specific job
+
+It is possible to specify a custom runner for each job. The following options are available:
+- `setup-runs-on`
+- `wasm-test-runs-on`
+- `interactor-tests-runs-on`
+- `test-coverage-runs-on`
+
 ## Usage of `reproducible-build.yml`
 
 See [reproducible-build.yml](.github/workflows/reproducible-build.yml).
@@ -78,6 +88,8 @@ The following configuration entries are available:
  - `contract_name`: a specific contract to be built. If not specified, all contracts in the workspace (repository) are built.
  - `create_release`: whether to create a new release (and upload the build artifacts as assets).
  - `attach_to_existing_release`: whether to upload the build artifacts on an existing release. This only works if the current `github.ref_name` (of the executing workflow) is associated with an existing release.
+ - `skip_preliminary_checks`: whether to skip the preliminary checks. This is not recommended for production use.
+ - `package_whole_project_src`: whether to include all project files in the packaged source (`*.source.json`).
 
 Note that `create_release` and `attach_to_existing_release` are mutually exclusive.
 
@@ -121,7 +133,7 @@ jobs:
     uses: multiversx/mx-sc-actions/.github/workflows/reproducible-build.yml@v2.2.1
     with:
       image_tag: v1.2.3 # this is an example; see above
-      attach_to_release: true
+      attach_to_existing_release: true
 ```
 
 ### Running reproducible builds on pull requests
